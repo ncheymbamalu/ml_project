@@ -1,4 +1,9 @@
 numpy
 pandas
 seaborn
+ydata_profiling
+mrmr_selection
+scikit-learn
+xgboost
+catboost
 -e .
