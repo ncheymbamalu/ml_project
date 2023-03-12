@@ -1,39 +1,42 @@
+from typing import Dict, Any
 import os
 import sys
 import pandas as pd
 
-from src.exception import CustomException
-from src.logger import logging
-from sklearn.model_selection import train_test_split
 from dataclasses import dataclass
+from sklearn.model_selection import train_test_split
+
+from src.logger import logging
+from src.exception import CustomException
+from src.utils import get_params, save_artifact
 
 
 @dataclass
 class DataIngestionConfig:
-    raw_data_path: str = os.path.join("artifacts", "raw.csv")
-    train_data_path: str = os.path.join("artifacts", "train.csv")
-    test_data_path: str = os.path.join("artifacts", "test.csv")
+    raw_data_path: str = os.path.join("artifacts", "raw_data.csv")
+    train_data_path: str = os.path.join("artifacts", "train_data.csv")
+    test_data_path: str = os.path.join("artifacts", "test_data.csv")
 
 
 class DataIngestion:
     def __init__(self):
         self.ingestion_config = DataIngestionConfig()
+        self.params: Dict[str, Any] = get_params(r"./conf/parameters.yml")
 
-    def initiate_data_ingestion(self):
-        logging.info("Data ingestion initiated")
+    def initiate_ingestion(self):
         try:
-            logging.info("Dataset read in as a Pandas DataFrame")
+            logging.info("Data ingestion initiated")
             df = pd.read_csv(r"./notebooks/data/student.csv")
+            save_artifact(self.ingestion_config.raw_data_path, df)
 
-            os.makedirs("artifacts", exist_ok=True)
-
-            df.to_csv(self.ingestion_config.raw_data_path, index=False, header=True)
-
-            logging.info("Dataset split into train and test sets")
-            df_train, df_test = train_test_split(df, test_size=0.2, random_state=42)
-            df_train.to_csv(self.ingestion_config.train_data_path, index=False, header=True)
-            df_test.to_csv(self.ingestion_config.test_data_path, index=False, header=True)
-
+            logging.info("Splitting data into train and test sets")
+            df_train, df_test = train_test_split(
+                df, 
+                test_size=self.params["test_size"], 
+                random_state=self.params["random_state"]
+            )
+            save_artifact(self.ingestion_config.train_data_path, df_train)
+            save_artifact(self.ingestion_config.test_data_path, df_test)
             logging.info("Data ingestion completed")
 
             return (
@@ -44,5 +47,5 @@ class DataIngestion:
             raise CustomException(err, sys)
         
 if __name__=="__main__":
-    data_ingestion_instance = DataIngestion()
-    data_ingestion_instance.initiate_data_ingestion()
+    ingest = DataIngestion()
+    ingest.initiate_ingestion()

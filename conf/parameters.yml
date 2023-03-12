@@ -1,0 +1,21 @@
+target: math_score
+numeric_features:
+  - reading_score
+  - writing_score
+nominal_features:
+  - gender 
+  - race_ethnicity
+  - lunch
+  - test_preparation_course
+ordinal:
+  features:
+    - parental_level_of_education
+  categories:
+    - some high school 
+    - high school 
+    - some college 
+    - associate's degree 
+    - bachelor's degree
+    - master's degree
+test_size: 0.2
+random_state: 42
