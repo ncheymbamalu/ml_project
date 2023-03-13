@@ -5,7 +5,8 @@ import pandas as pd
 
 from dataclasses import dataclass
 from sklearn.compose import ColumnTransformer
-from sklearn.preprocessing import StandardScaler, OneHotEncoder, OrdinalEncoder 
+from sklearn.preprocessing import StandardScaler, OneHotEncoder, OrdinalEncoder
+from mrmr import mrmr_regression 
 
 from src.logger import logging
 from src.exception import CustomException
@@ -54,10 +55,9 @@ class DataTransformation:
 
             logging.info("Feature transformation initiated")
             df_train, df_test = impute_data(df_train, df_test)
-            X_train = df_train.drop(self.params["target"], axis=1)
-            y_train = df_train[self.params["target"]]
-            X_test = df_test.drop(self.params["target"], axis=1)
-            y_test = df_test[self.params["target"]]
+            target = self.params["target"]
+            X_train, y_train = df_train.drop(target, axis=1), df_train[target]
+            X_test, y_test = df_test.drop(target, axis=1), df_test[target]
 
             ft = self.feature_transformer()
             ft.fit(X_train)
@@ -78,8 +78,22 @@ class DataTransformation:
             X_test = pd.DataFrame(
                 ft.transform(X_test), columns=features, index=X_test.index.tolist()
             )
-            train_set = pd.concat([X_train, y_train], axis=1)
-            test_set = pd.concat([X_test, y_test], axis=1)
+            
+            rel_features = mrmr_regression(
+                 X=X_train, 
+                 y=y_train, 
+                 K=int(len(features)/2), 
+                 relevance="f", 
+                 redundancy="c"
+            )
+            logging.info(
+                "Most relevant/least redundant features: %s, and %s", 
+                ', '.join(rel_features[:-1]),
+                rel_features[-1]
+            )
+            
+            train_set = pd.concat([X_train[rel_features], y_train], axis=1)
+            test_set = pd.concat([X_test[rel_features], y_test], axis=1)
             logging.info("Feature transformation completed")
 
             logging.info(
@@ -101,8 +115,6 @@ class DataTransformation:
 
 
 if __name__=="__main__":
-    ingest = DataIngestion()
-    train_data_path, test_data_path = ingest.initiate_ingestion()
-    transform = DataTransformation()
-    transform.initiate_transformation(train_data_path, test_data_path)
+    train_data_path, test_data_path = DataIngestion().initiate_ingestion()
+    _, _, _ = DataTransformation().initiate_transformation(train_data_path, test_data_path)
     

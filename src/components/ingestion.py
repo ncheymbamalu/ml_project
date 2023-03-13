@@ -29,7 +29,7 @@ class DataIngestion:
             df = pd.read_csv(r"./notebooks/data/student.csv")
             save_artifact(self.ingestion_config.raw_data_path, df)
 
-            logging.info("Splitting data into train and test sets")
+            logging.info("Splitting the data into train and test sets")
             df_train, df_test = train_test_split(
                 df, 
                 test_size=self.params["test_size"], 
@@ -47,5 +47,4 @@ class DataIngestion:
             raise CustomException(err, sys)
         
 if __name__=="__main__":
-    ingest = DataIngestion()
-    ingest.initiate_ingestion()
+    _, _ = DataIngestion().initiate_ingestion()

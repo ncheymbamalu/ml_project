@@ -6,4 +6,4 @@ mrmr_selection
 scikit-learn
 xgboost
 catboost
--e .
+# -e .

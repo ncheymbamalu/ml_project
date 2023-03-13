@@ -1,8 +1,9 @@
-from typing import Tuple, Dict, Any
+from typing import Tuple, List, Dict, Any
 import os
 import sys
 import yaml
 import joblib
+import numpy as np
 import pandas as pd
 
 from yaml.loader import SafeLoader
@@ -102,13 +103,78 @@ def impute_data(
                 X_train_imputed.loc[train_indices_to_impute, col] = model.predict(train_isna.drop(col, axis=1))
                 X_test_imputed.loc[test_indices_to_impute, col] = model.predict(test_isna.drop(col, axis=1))
 
-        # concatenate the train and test set imputed features and target
+        # concatenate the train and test set imputed feature matrix and target vector
         train_set_imputed = pd.concat([X_train_imputed, y_train], axis=1).reset_index(drop=True)
         test_set_imputed = pd.concat([X_test_imputed, y_test], axis=1).reset_index(drop=True)
         return train_set_imputed, test_set_imputed
     except Exception as err:
        raise CustomException(err, sys)
     
+
+def adj_rsquared(
+      X: pd.DataFrame, 
+      y: pd.Series, 
+      y_hat: pd.Series
+) -> float:
+   """
+    Returns the adjusted R²
+
+    Args:
+        X: feature matrix
+        y: target vector
+        y_hat: prediction vector
+
+    Returns:
+        adj_r2: Adjusted R²
+    """
+   try:
+      N, D = X.shape
+      t = y - np.mean(y)
+      sst = t.dot(t)
+      e = y - y_hat
+      sse = e.dot(e)
+      r2 = 1 - (sse / sst)
+      adj_r2 = 1 - (((1 - r2) * (N - 1)) / (N - D - 1))
+      return adj_r2
+   except Exception as err:
+      raise CustomException(err, sys)
+
+
+def evaluate_models(
+      models: Dict[str, Any], 
+      X_train: pd.DataFrame, 
+      y_train: pd.Series, 
+      X_test: pd.DataFrame, 
+      y_test: pd.Series
+) -> Dict[str, List[float]]:
+   """
+   Trains and evaluates several regressors
+
+   Args:
+        models: Dictionary of regressors
+        X_train: ML-ready train set feature matrix
+        y_train: ML-ready train set target vector
+        X_test: ML-ready test set feature matrix
+        y_test: ML-ready test set target vector
+
+    Returns:
+        report: Dictionary of regressors and their
+        corresponding train and test set adjusted 
+        R² scores
+   """
+   try:
+      report = {}
+      for name, model in models.items():
+         model.fit(X_train, y_train)
+         train_predictions = pd.Series(model.predict(X_train))
+         train_metric = adj_rsquared(X_train, y_train, train_predictions)
+         test_predictions = pd.Series(model.predict(X_test))
+         test_metric = adj_rsquared(X_test, y_test, test_predictions)
+         report[name] = [train_metric, test_metric]
+         return report
+   except Exception as err:
+      raise CustomException(err, sys)
+   
 
 def save_artifact(artifact_path: str, artifact):
   """
