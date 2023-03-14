@@ -2,7 +2,7 @@ from typing import Tuple, List, Dict, Any
 import os
 import sys
 import yaml
-import joblib
+import pickle
 import numpy as np
 import pandas as pd
 
@@ -114,7 +114,7 @@ def impute_data(
 def adj_rsquared(
       X: pd.DataFrame, 
       y: pd.Series, 
-      y_hat: pd.Series
+      y_hat: np.ndarray
 ) -> float:
    """
     Returns the adjusted R²
@@ -166,9 +166,9 @@ def evaluate_models(
       report = {}
       for name, model in models.items():
          model.fit(X_train, y_train)
-         train_predictions = pd.Series(model.predict(X_train))
+         train_predictions = model.predict(X_train)
          train_metric = adj_rsquared(X_train, y_train, train_predictions)
-         test_predictions = pd.Series(model.predict(X_test))
+         test_predictions = model.predict(X_test)
          test_metric = adj_rsquared(X_test, y_test, test_predictions)
          report[name] = [train_metric, test_metric]
          return report
@@ -190,6 +190,7 @@ def save_artifact(artifact_path: str, artifact):
      if artifact_path[-3:] == "csv":
         artifact.to_csv(artifact_path, index=False)
      elif artifact_path[-3:] == "pkl":
-        joblib.dump(artifact, artifact_path)
+        with open(artifact_path, "wb") as fp:
+           pickle.dump(artifact, fp)
   except Exception as err:
      raise CustomException(err, sys)
