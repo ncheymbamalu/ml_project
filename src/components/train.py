@@ -40,6 +40,7 @@ class Train:
             X_train, y_train = train_set.drop(target, axis=1), train_set[target]
             X_test, y_test = test_set.drop(target, axis=1), test_set[target]
 
+            # base models
             models = {
                 "LinearRegression": LinearRegression(), 
                 "LassoRegression": Lasso(), 
@@ -53,6 +54,15 @@ class Train:
                 "CatBoostRegression": CatBoostRegressor(verbose=False), 
                 "XGBRegression": XGBRegressor() 
             }
+
+            # # hyperparameter optimization models
+            # models = {
+            #     "RandomForestRegression": RandomForestRegressor(), 
+            #     "AdaBoostRegression": AdaBoostRegressor(), 
+            #     "GradientBoostingRegression": GradientBoostingRegressor(), 
+            #     "CatBoostRegression": CatBoostRegressor(verbose=False), 
+            #     "XGBRegression": XGBRegressor() 
+            # }
 
             report = evaluate_models(
                 models, 

@@ -8,6 +8,7 @@ import pandas as pd
 
 from yaml.loader import SafeLoader
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+from sklearn.model_selection import GridSearchCV
 
 from src.exception import CustomException
 
@@ -47,10 +48,8 @@ def impute_data(
     try:
         params = get_params(r"./conf/parameters.yml")
         target = params["target"]
-        X_train = train_set.drop(target, axis=1)
-        y_train = train_set[target]
-        X_test = test_set.drop(target, axis=1)
-        y_test = test_set[target]
+        X_train, y_train = train_set.drop(target, axis=1), train_set[target]
+        X_test, y_test = test_set.drop(target, axis=1), test_set[target]
         X_train_imputed, X_test_imputed = X_train.copy(deep=True), X_test.copy(deep=True)
         num_cols = params["numeric_features"]
         cat_cols = params["nominal_features"] + params["ordinal"]["features"]
@@ -111,11 +110,7 @@ def impute_data(
        raise CustomException(err, sys)
     
 
-def adj_rsquared(
-      X: pd.DataFrame, 
-      y: pd.Series, 
-      y_hat: np.ndarray
-) -> float:
+def adj_rsquared(X: pd.DataFrame, y: pd.Series, y_hat: np.ndarray) -> float:
    """
     Returns the adjusted R²
 
@@ -163,9 +158,25 @@ def evaluate_models(
         R² scores
    """
    try:
+    #   params = get_params(r"./conf/parameters.yml")
       report = {}
       for name, model in models.items():
+        #  no hyperparameter optimization
          model.fit(X_train, y_train)
+         
+        # #  hyperparameter optimization
+        #  gscv = GridSearchCV(
+        #     estimator=model, 
+        #     param_grid=params["grid_search_cv"]["param_grid"][name], 
+        #     scoring=params["grid_search_cv"]["scoring"], 
+        #     refit=params["grid_search_cv"]["refit"], 
+        #     cv=params["grid_search_cv"]["cv"], 
+        #     n_jobs=params["grid_search_cv"]["n_jobs"]
+        #  )
+        #  gscv.fit(X_train, y_train)
+        #  model = gscv.best_estimator_
+         
+        #  predict and evaluate
          train_predictions = model.predict(X_train)
          train_metric = adj_rsquared(X_train, y_train, train_predictions)
          test_predictions = model.predict(X_test)

@@ -19,3 +19,81 @@ ordinal:
     - master's degree
 test_size: 0.2
 random_state: 42
+grid_search_cv:
+  param_grid:
+    RandomForestRegression:
+      n_estimators:
+        - 100
+        - 200
+        - 500
+      max_depth:
+        - 3
+        - 5
+        - 8
+        - 20
+      max_features:
+        - sqrt
+        - log2
+    AdaBoostRegression:
+      n_estimators:
+        - 100
+        - 200
+        - 500
+      learning_rate:
+        - 0.01
+        - 0.05
+        - 0.1
+        - 0.5
+    GradientBoostingRegression:
+      n_estimators:
+        - 100
+        - 200
+        - 500
+      learning_rate:
+        - 0.01
+        - 0.05
+        - 0.1
+        - 0.5
+      subsample:
+        - 0.5
+        - 0.6
+        - 0.7
+        - 0.8
+        - 0.9
+    CatBoostRegression:
+      depth:
+        - 3
+        - 5
+        - 8
+      learning_rate:
+        - 0.01
+        - 0.05
+        - 0.1
+        - 0.5
+      iterations:
+        - 20
+        - 50
+        - 100
+    XGBRegression:
+      max_depth:
+        - 3
+        - 5
+        - 8
+      n_estimators:
+        - 200
+        - 300
+        - 500  
+      learning_rate:
+        - 0.01
+        - 0.05
+        - 0.1
+        - 0.5
+      min_child_weight:
+        - 3
+        - 10
+        - 50
+        - 100
+  scoring: r2
+  refit: r2
+  cv: 5
+  n_jobs: -1
