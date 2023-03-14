@@ -64,13 +64,12 @@ class DataTransformation:
             
             ohe_categories = []
             for array in ft.transformers_[1][1].categories_:
-                ohe_categories += [cat.lower() for cat in array.tolist()]
+                ohe_categories += [
+                    category.lower().replace(" ", "_").replace("/", "_") 
+                    for category in array.tolist()
+                ]
 
-            features = [
-                feature.replace(" ", "_").replace("/", "_") 
-                for feature 
-                in self.params["numeric_features"] + ohe_categories + self.params["ordinal"]["features"]
-            ]
+            features = self.params["numeric_features"] + ohe_categories + self.params["ordinal"]["features"]
 
             X_train = pd.DataFrame(
                 ft.transform(X_train), columns=features, index=X_train.index.tolist()
