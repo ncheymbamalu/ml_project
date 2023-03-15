@@ -140,8 +140,9 @@ def evaluate_models(
       X_train: pd.DataFrame, 
       y_train: pd.Series, 
       X_test: pd.DataFrame, 
-      y_test: pd.Series
-) -> Dict[str, List[float]]:
+      y_test: pd.Series, 
+      params: Dict[str, Any]
+) -> Tuple[str, Any, float]:
    """
    Trains and evaluates several regressors
 
@@ -153,36 +154,42 @@ def evaluate_models(
         y_test: ML-ready test set target vector
 
     Returns:
-        report: Dictionary of regressors and their
-        corresponding train and test set adjusted 
-        R² scores
+        model_name: Name of the regressor that 
+        produced the highest test set adjusted R² 
+        best_model: The regressor that corresponds 
+        to model_name
+        best_score: Test set adjusted R² that 
+        best_model produced
    """
    try:
-    #   params = get_params(r"./conf/parameters.yml")
       report = {}
       for name, model in models.items():
-        #  no hyperparameter optimization
-         model.fit(X_train, y_train)
-         
-        # #  hyperparameter optimization
-        #  gscv = GridSearchCV(
-        #     estimator=model, 
-        #     param_grid=params["grid_search_cv"]["param_grid"][name], 
-        #     scoring=params["grid_search_cv"]["scoring"], 
-        #     refit=params["grid_search_cv"]["refit"], 
-        #     cv=params["grid_search_cv"]["cv"], 
-        #     n_jobs=params["grid_search_cv"]["n_jobs"]
-        #  )
-        #  gscv.fit(X_train, y_train)
-        #  model = gscv.best_estimator_
-         
-        #  predict and evaluate
-         train_predictions = model.predict(X_train)
-         train_metric = adj_rsquared(X_train, y_train, train_predictions)
-         test_predictions = model.predict(X_test)
-         test_metric = adj_rsquared(X_test, y_test, test_predictions)
-         report[name] = [train_metric, test_metric]
-         return report
+          if name == "LinearRegression":
+              model.fit(X_train, y_train)
+              train_predictions = model.predict(X_train)
+              train_metric = adj_rsquared(X_train, y_train, train_predictions)
+              test_predictions = model.predict(X_test)
+              test_metric = adj_rsquared(X_test, y_test, test_predictions)
+              report[name] = [model, train_metric, test_metric]
+          else:
+              gscv = GridSearchCV(
+                  estimator=model,
+                  param_grid=params["grid_search_cv"]["param_grid"][name],
+                  scoring=params["grid_search_cv"]["scoring"],
+                  refit=params["grid_search_cv"]["refit"],
+                  cv=params["grid_search_cv"]["cv"],
+                  n_jobs=params["grid_search_cv"]["n_jobs"]
+              )
+              gscv.fit(X_train, y_train)
+              train_predictions = gscv.predict(X_train)
+              train_metric = adj_rsquared(X_train, y_train, train_predictions)
+              test_predictions = gscv.predict(X_test)
+              test_metric = adj_rsquared(X_test, y_test, test_predictions)
+              report[name] = [gscv.best_estimator_, train_metric, test_metric]
+      model_name: str = sorted(report.items(), key=lambda kv: kv[1][-1])[::-1][0][0]
+      best_model = sorted(report.items(), key=lambda kv: kv[1][-1])[::-1][0][1][0]
+      best_score: float = sorted(report.items(), key=lambda kv: kv[1][-1])[::-1][0][1][-1]
+      return model_name, best_model, best_score
    except Exception as err:
       raise CustomException(err, sys)
    

@@ -1,6 +1,7 @@
 from typing import Dict, Any
 import os
 import sys
+import numpy as np
 import pandas as pd
 
 from dataclasses import dataclass
@@ -81,7 +82,7 @@ class DataTransformation:
             rel_features = mrmr_regression(
                  X=X_train, 
                  y=y_train, 
-                 K=int(len(features)/2), 
+                 K=int(np.random.choice([0.5, 0.6, 0.7, 0.8]) * len(features)), 
                  relevance="f", 
                  redundancy="c"
             )

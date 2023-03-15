@@ -5,10 +5,7 @@ import numpy as np
 import pandas as pd
 
 from dataclasses import dataclass
-from sklearn.linear_model import LinearRegression, Ridge, Lasso
-from sklearn.neighbors import KNeighborsRegressor
-from sklearn.svm import SVR
-from sklearn.tree import DecisionTreeRegressor
+from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import (
     RandomForestRegressor, 
     AdaBoostRegressor, 
@@ -43,11 +40,6 @@ class Train:
             # base models
             models = {
                 "LinearRegression": LinearRegression(), 
-                "LassoRegression": Lasso(), 
-                "RidgeRegression": Ridge(), 
-                "KNeighborsRegression": KNeighborsRegressor(), 
-                "SupportVectorRegression": SVR(), 
-                "DecisionTreeRegression": DecisionTreeRegressor(), 
                 "RandomForestRegression": RandomForestRegressor(), 
                 "AdaBoostRegression": AdaBoostRegressor(), 
                 "GradientBoostingRegression": GradientBoostingRegressor(), 
@@ -55,47 +47,35 @@ class Train:
                 "XGBRegression": XGBRegressor() 
             }
 
-            # # hyperparameter optimization models
-            # models = {
-            #     "RandomForestRegression": RandomForestRegressor(), 
-            #     "AdaBoostRegression": AdaBoostRegressor(), 
-            #     "GradientBoostingRegression": GradientBoostingRegressor(), 
-            #     "CatBoostRegression": CatBoostRegressor(verbose=False), 
-            #     "XGBRegression": XGBRegressor() 
-            # }
-
-            report = evaluate_models(
+            name, model, score = evaluate_models(
                 models, 
                 X_train, 
                 y_train, 
                 X_test, 
-                y_test
+                y_test, 
+                self.params
             )
 
-            model_name: str = sorted(report.items(), key=lambda kv: kv[1][1])[::-1][0][0]
-            best_score: float = sorted(report.items(), key=lambda kv: kv[1][1])[::-1][0][1][1]
-            best_model = models[model_name]
-
-            if best_score < 0.65:
+            if score < 0.65:
                 raise CustomException("No best model found")
             
             logging.info(
-                "%s produced an adjusted R² of %s on the test set", 
-                model_name, 
-                np.round(best_score, 2)
+                "%s, the highest test set adjusted R², was produced via %s",  
+                np.round(score, 2), 
+                name
             )
 
             logging.info(
                 "Saving the %s model as './%s'", 
-                model_name,
+                name,
                 self.train_config.model_path
             )
             save_artifact(
                 self.train_config.model_path, 
-                best_model
+                model
             )
 
-            print(f"{model_name} produced an adjusted R² of {best_score:.2f} on the test set.")
+            print(f"{score:.2f}, the highest test set adjusted R², was produced via {name}")
         except Exception as err:
             raise CustomException(err, sys)
         
