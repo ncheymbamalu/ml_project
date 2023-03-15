@@ -1,8 +1,11 @@
-from typing import Tuple, List, Dict, Any
+"""
+Module containing helper functions
+"""
+from typing import Tuple, Dict, Any
 import os
 import sys
-import yaml
 import pickle
+import yaml
 import numpy as np
 import pandas as pd
 
@@ -14,21 +17,21 @@ from src.exception import CustomException
 
 
 def get_params(params_path: str) -> Dict[str, Any]:
-  """
-  Returns the parameters defined in params_path
+    """
+    Returns the parameters defined in params_path
 
-  Args:
-    params_path: ./conf/parameters.yml
+    Args:
+        params_path: ./conf/parameters.yml
 
-  Returns:
-    params: Parameters defined in params_path
-  """
-  try:
-    with open(params_path) as filepath:
-       params = yaml.load(filepath, Loader=SafeLoader)
-       return params
-  except Exception as err:
-    raise CustomException(err, sys)
+    Returns:
+        params: Parameters defined in params_path
+    """
+    try:
+        with open(params_path) as filepath:
+            params = yaml.load(filepath, Loader=SafeLoader)
+        return params
+    except Exception as err:
+        raise CustomException(err, sys)
 
 
 def impute_data(
@@ -103,50 +106,57 @@ def impute_data(
                 X_test_imputed.loc[test_indices_to_impute, col] = model.predict(test_isna.drop(col, axis=1))
 
         # concatenate the train and test set imputed feature matrix and target vector
-        train_set_imputed = pd.concat([X_train_imputed, y_train], axis=1).reset_index(drop=True)
-        test_set_imputed = pd.concat([X_test_imputed, y_test], axis=1).reset_index(drop=True)
+        train_set_imputed = (pd.concat
+                             ([X_train_imputed, y_train], axis=1)
+                             .reset_index(drop=True)
+                             )
+        test_set_imputed = (pd.concat
+                            ([X_test_imputed, y_test], axis=1)
+                            .reset_index(drop=True)
+                            )
         return train_set_imputed, test_set_imputed
     except Exception as err:
-       raise CustomException(err, sys)
-    
+        raise CustomException(err, sys)
 
-def adj_rsquared(X: pd.DataFrame, y: pd.Series, y_hat: np.ndarray) -> float:
-   """
-    Returns the adjusted R²
 
+def adj_rsquared(
+        feature_matrix: pd.DataFrame,
+        target_vector: pd.Series,
+        prediction_vector: np.ndarray
+) -> float:
+    """
+    Calculates and returns the adjusted R²
     Args:
-        X: feature matrix
-        y: target vector
-        y_hat: prediction vector
-
+        feature_matrix: Feature matrix of shape (N, D)
+        target_vector: Target vector of length N
+        prediction_vector: Prediction vector of length N
     Returns:
         adj_r2: Adjusted R²
     """
-   try:
-      N, D = X.shape
-      t = y - np.mean(y)
-      sst = t.dot(t)
-      e = y - y_hat
-      sse = e.dot(e)
-      r2 = 1 - (sse / sst)
-      adj_r2 = 1 - (((1 - r2) * (N - 1)) / (N - D - 1))
-      return adj_r2
-   except Exception as err:
-      raise CustomException(err, sys)
+    try:
+        n_records, n_features = feature_matrix.shape
+        total = target_vector - np.mean(target_vector)
+        ss_total = total.dot(total)
+        error = target_vector - prediction_vector
+        ss_error = error.dot(error)
+        r2_score = 1 - (ss_error / ss_total)
+        adj_r2 = 1 - (((1 - r2_score) * (n_records - 1)) / (n_records - n_features - 1))
+        return adj_r2
+    except Exception as err:
+        raise CustomException(err, sys)
 
 
 def evaluate_models(
-      models: Dict[str, Any], 
-      X_train: pd.DataFrame, 
-      y_train: pd.Series, 
-      X_test: pd.DataFrame, 
-      y_test: pd.Series, 
-      params: Dict[str, Any]
+        models: Dict[str, Any],
+        X_train: pd.DataFrame,
+        y_train: pd.Series,
+        X_test: pd.DataFrame,
+        y_test: pd.Series,
 ) -> Tuple[str, Any, float]:
-   """
-   Trains and evaluates several regressors
+    """
+    Trains and evaluates several regressors
 
-   Args:
+    Args:
         models: Dictionary of regressors
         X_train: ML-ready train set feature matrix
         y_train: ML-ready train set target vector
@@ -154,61 +164,63 @@ def evaluate_models(
         y_test: ML-ready test set target vector
 
     Returns:
-        model_name: Name of the regressor that 
-        produced the highest test set adjusted R² 
-        best_model: The regressor that corresponds 
+        model_name: Name of the regressor that
+        produced the highest test set adjusted R²
+        best_model: The regressor that corresponds
         to model_name
-        best_score: Test set adjusted R² that 
+        best_score: Test set adjusted R² that
         best_model produced
-   """
-   try:
-      report = {}
-      for name, model in models.items():
-          if name == "LinearRegression":
-              model.fit(X_train, y_train)
-              train_predictions = model.predict(X_train)
-              train_metric = adj_rsquared(X_train, y_train, train_predictions)
-              test_predictions = model.predict(X_test)
-              test_metric = adj_rsquared(X_test, y_test, test_predictions)
-              report[name] = [model, train_metric, test_metric]
-          else:
-              gscv = GridSearchCV(
-                  estimator=model,
-                  param_grid=params["grid_search_cv"]["param_grid"][name],
-                  scoring=params["grid_search_cv"]["scoring"],
-                  refit=params["grid_search_cv"]["refit"],
-                  cv=params["grid_search_cv"]["cv"],
-                  n_jobs=params["grid_search_cv"]["n_jobs"]
-              )
-              gscv.fit(X_train, y_train)
-              train_predictions = gscv.predict(X_train)
-              train_metric = adj_rsquared(X_train, y_train, train_predictions)
-              test_predictions = gscv.predict(X_test)
-              test_metric = adj_rsquared(X_test, y_test, test_predictions)
-              report[name] = [gscv.best_estimator_, train_metric, test_metric]
-      model_name: str = sorted(report.items(), key=lambda kv: kv[1][-1])[::-1][0][0]
-      best_model = sorted(report.items(), key=lambda kv: kv[1][-1])[::-1][0][1][0]
-      best_score: float = sorted(report.items(), key=lambda kv: kv[1][-1])[::-1][0][1][-1]
-      return model_name, best_model, best_score
-   except Exception as err:
-      raise CustomException(err, sys)
-   
+    """
+    try:
+        params = get_params(r"./conf/parameters.yml")
+        report = {}
+        for name, model in models.items():
+            if name == "LinearRegression":
+                model.fit(X_train, y_train)
+                train_predictions = model.predict(X_train)
+                train_metric = adj_rsquared(X_train, y_train, train_predictions)
+                test_predictions = model.predict(X_test)
+                test_metric = adj_rsquared(X_test, y_test, test_predictions)
+                report[name] = [model, train_metric, test_metric]
+            else:
+                gscv = GridSearchCV(
+                    estimator=model,
+                    param_grid=params["grid_search_cv"]["param_grid"][name],
+                    scoring=params["grid_search_cv"]["scoring"],
+                    refit=params["grid_search_cv"]["refit"],
+                    cv=params["grid_search_cv"]["cv"],
+                    n_jobs=params["grid_search_cv"]["n_jobs"]
+                )
+                gscv.fit(X_train, y_train)
+                train_predictions = gscv.predict(X_train)
+                train_metric = adj_rsquared(X_train, y_train, train_predictions)
+                test_predictions = gscv.predict(X_test)
+                test_metric = adj_rsquared(X_test, y_test, test_predictions)
+                report[name] = [gscv.best_estimator_, train_metric, test_metric]
+
+        model_name: str = sorted(report.items(), key=lambda kv: kv[1][-1])[::-1][0][0]
+        best_model = sorted(report.items(), key=lambda kv: kv[1][-1])[::-1][0][1][0]
+        best_score: float = sorted(report.items(), key=lambda kv: kv[1][-1])[::-1][0][1][-1]
+        return model_name, best_model, best_score
+    except Exception as err:
+        raise CustomException(err, sys)
+
 
 def save_artifact(artifact_path: str, artifact):
-  """
-  Writes artifact to artifact_path
+    """
+    Writes artifact to artifact_path
 
-  Args:
-    artifact_path: File path the artifact is saved to
-    artifact: Python object
-  """
-  try:
-     directory = os.path.dirname(artifact_path)
-     os.makedirs(directory, exist_ok=True)
-     if artifact_path[-3:] == "csv":
-        artifact.to_csv(artifact_path, index=False)
-     elif artifact_path[-3:] == "pkl":
-        with open(artifact_path, "wb") as fp:
-           pickle.dump(artifact, fp)
-  except Exception as err:
-     raise CustomException(err, sys)
+    Args:
+        artifact_path: File path the artifact is written to
+        artifact: Python object
+    """
+    try:
+        directory = os.path.dirname(artifact_path)
+        os.makedirs(directory, exist_ok=True)
+        if artifact_path[-3:] == "csv":
+            artifact.to_csv(artifact_path, index=False)
+        elif artifact_path[-3:] == "pkl":
+            with open(artifact_path, "wb") as fp:
+                pickle.dump(artifact, fp)
+    except Exception as err:
+        raise CustomException(err, sys)

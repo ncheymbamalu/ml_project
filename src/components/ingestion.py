@@ -45,6 +45,7 @@ class DataIngestion:
             ) 
         except Exception as err:
             raise CustomException(err, sys)
-        
-if __name__=="__main__":
+
+
+if __name__ == "__main__":
     _, _ = DataIngestion().initiate_ingestion()

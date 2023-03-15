@@ -37,7 +37,6 @@ class Train:
             X_train, y_train = train_set.drop(target, axis=1), train_set[target]
             X_test, y_test = test_set.drop(target, axis=1), test_set[target]
 
-            # base models
             models = {
                 "LinearRegression": LinearRegression(), 
                 "RandomForestRegression": RandomForestRegressor(), 
@@ -52,12 +51,11 @@ class Train:
                 X_train, 
                 y_train, 
                 X_test, 
-                y_test, 
-                self.params
+                y_test
             )
 
             if score < 0.65:
-                raise CustomException("No best model found")
+                raise CustomException("No best model found", sys)
             
             logging.info(
                 "%s, the highest test set adjusted R², was produced via %s",  
@@ -80,7 +78,7 @@ class Train:
             raise CustomException(err, sys)
         
 
-if __name__=="__main__":
+if __name__ == "__main__":
     train_data_path, test_data_path = DataIngestion().initiate_ingestion()
     df_train, df_test, _ = DataTransformation().initiate_transformation(train_data_path, test_data_path)
     Train().initiate_train(df_train, df_test)

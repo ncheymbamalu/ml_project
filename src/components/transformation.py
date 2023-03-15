@@ -29,19 +29,19 @@ class DataTransformation:
         try:
             ct = ColumnTransformer([
                 (
-                "numeric_features", 
-                StandardScaler(), 
-                self.params["numeric_features"]
+                    "numeric_features",
+                    StandardScaler(),
+                    self.params["numeric_features"]
+                ),
+                (
+                    "nominal_features",
+                    OneHotEncoder(sparse_output=False, handle_unknown="ignore"),
+                    self.params["nominal_features"]
                 ), 
                 (
-                "nominal_features", 
-                OneHotEncoder(sparse_output=False, handle_unknown="ignore"), 
-                self.params["nominal_features"]
-                ), 
-                (
-                "ordinal_features", 
-                OrdinalEncoder(categories=[self.params["ordinal"]["categories"]]), 
-                self.params["ordinal"]["features"]
+                    "ordinal_features",
+                    OrdinalEncoder(categories=[self.params["ordinal"]["categories"]]),
+                    self.params["ordinal"]["features"]
                 )
                 ])
             return ct
@@ -114,7 +114,7 @@ class DataTransformation:
             raise CustomException(err, sys)
 
 
-if __name__=="__main__":
-    train_data_path, test_data_path = DataIngestion().initiate_ingestion()
-    _, _, _ = DataTransformation().initiate_transformation(train_data_path, test_data_path)
+if __name__ == "__main__":
+    train_set_path, test_set_path = DataIngestion().initiate_ingestion()
+    _, _, _ = DataTransformation().initiate_transformation(train_set_path, test_set_path)
     
