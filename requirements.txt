@@ -6,4 +6,5 @@ mrmr_selection
 scikit-learn
 xgboost
 catboost
+Flask
 # -e .

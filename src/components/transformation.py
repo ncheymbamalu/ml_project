@@ -70,30 +70,30 @@ class DataTransformation:
                     for category in array.tolist()
                 ]
 
-            features = self.params["numeric_features"] + ohe_categories + self.params["ordinal"]["features"]
+            ft_features = self.params["numeric_features"] + ohe_categories + self.params["ordinal"]["features"]
 
             X_train = pd.DataFrame(
-                ft.transform(X_train), columns=features, index=X_train.index.tolist()
+                ft.transform(X_train), columns=ft_features, index=X_train.index.tolist()
             )
             X_test = pd.DataFrame(
-                ft.transform(X_test), columns=features, index=X_test.index.tolist()
+                ft.transform(X_test), columns=ft_features, index=X_test.index.tolist()
             )
             
-            rel_features = mrmr_regression(
+            mrmr_features = mrmr_regression(
                  X=X_train, 
                  y=y_train, 
-                 K=int(np.random.choice([0.5, 0.6, 0.7, 0.8]) * len(features)), 
+                 K=int(np.random.choice([0.5, 0.6, 0.7, 0.8]) * len(ft_features)),
                  relevance="f", 
                  redundancy="c"
             )
             logging.info(
-                "Most relevant/least redundant features: %s, and %s", 
-                ', '.join(rel_features[:-1]),
-                rel_features[-1]
+                "Most relevant, least redundant features: %s, and %s",
+                ', '.join(mrmr_features[:-1]),
+                mrmr_features[-1]
             )
             
-            train_set = pd.concat([X_train[rel_features], y_train], axis=1)
-            test_set = pd.concat([X_test[rel_features], y_test], axis=1)
+            train_set = pd.concat([X_train[mrmr_features], y_train], axis=1)
+            test_set = pd.concat([X_test[mrmr_features], y_test], axis=1)
             logging.info("Feature transformation completed")
 
             logging.info(
