@@ -26,7 +26,7 @@ class CustomData:
         self.reading_score = reading_score
         self.writing_score = writing_score
         
-    def convert_to_dataframe(self):
+    def to_dataframe(self):
         try: 
             record = pd.DataFrame(
                 {

@@ -24,8 +24,7 @@ def predict_record():
             reading_score=int(request.form.get("reading_score")),
             writing_score=int(request.form.get("writing_score"))
         )
-
-        df_record = record.convert_to_dataframe()
+        df_record = record.to_dataframe()
         prediction = min(PredictPipeline().predict(df_record), 100)
         return render_template("home.html", results=int(prediction))
 
